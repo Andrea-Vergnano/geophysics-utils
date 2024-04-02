@@ -1,2 +1,2 @@
 # geophysics-utils
-This repository mainly contains scripts for geophysical data processing. They sometimes refer to a scientific publication of mine, which can be helpful to have an example of case study. Feel free to use and reproduce my code, by properly attribuiting the credits to my work. I hope you find something useful for your research or job.
+This repository mainly contains scripts for geophysical data processing. They sometimes refer to a scientific publication of mine, which can be helpful to have an example of case study. Feel free to use and reproduce my code, by properly attribuiting the credits to my work. I would be happy if you find some bugs or want to improve one of the scripts. I hope you find something useful for your research or job.
