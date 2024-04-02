@@ -1,4 +1,7 @@
 #This R script was written by Andrea Vergnano, 2024, for geophysical research purposes. It successfully runs in R version 4.3.2, and RStudio build 494.
+
+#For correctly produce the mesh, you need to open the output file in gmsh version 4.12. Earlier versions do not use the correct mesh size specified in the Field (see at the end of the script)
+
 #If you want to reuse it for any purpose, please cite the scientific paper of my research group about the Pugnetto cave (Italy).
 #If you have any question, feel free to contact me on Github or at my email, currently andrea.vergnano@unito.it.
 
