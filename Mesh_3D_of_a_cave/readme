@@ -1,3 +1,5 @@
+The R script in this folder creates a GMSH script that meshes a volume with an elliptical hole inside it. It was created to model a cave.
+
 Gmsh can read .geo files, which are text files written in Gmsh' own scripting language, that contain all the information to build a CAD geometry. It was convenient to write an auxiliary R script that imports a .csv file containing 5 columns: X, Y, Z, width and height, each row referring to one of the 48 electrodes, and writes a Gmsh .geo script file that does:
 1- Draw the points of the electrodes;
 2- Calculate the direction of the cave at each electrode location, storing it in the columns dirX and dirY;
