@@ -1,0 +1,11 @@
+Gmsh can read .geo files, which are text files written in Gmsh' own scripting language, that contain all the information to build a CAD geometry. It was convenient to write an auxiliary R script that imports a .csv file containing 5 columns: X, Y, Z, width and height, each row referring to one of the 48 electrodes, and writes a Gmsh .geo script file that does:
+1- Draw the points of the electrodes;
+2- Calculate the direction of the cave at each electrode location, storing it in the columns dirX and dirY;
+3- Draw, for each electrode, an ellipsis representing the shape of the cave at that location, perpendicular to the Z axis and to the direction of the cave;
+4- Draw a volume of the hole of the cave, thanks to the gmsh Ruled ThruSections command;
+5- Draw a box-shaped volume of the rock domain, based on an user-defined investigation depth;
+6- Perform the boolean difference between the box and the cave volumes, to obtain a single box-shaped volume with a hole inside
+7- Create a Physical volume of the volume just created
+8- Define a mesh size field, to constrain the mesh size to be finer near the cave hole, and coarser farther away, with a linear dependence of the mesh size on the distance from the surface of the cave hole.
+9- (to be performed manually) Open GMSH software, import the .geo file, create the mesh with the Mesh -> 3D command, and save it in .msh format. Make sure no or very few "ill-tets" (badly shaped tethraedra) are not created this way, if not, ResIPy will have problems in importing this mesh. In case of warnings about "ill-tets", the suggestion is to work on the definition of the mesh field, loosening some constraints to allow the mesh creator to have more flexibility.
+10- Import the .msh mesh in ResIPy, thanks to the "import custom mesh" option, making sure the volume is numbered as "1". Start the 3D inversion after adjusting the parameters as desired and checking the "Do not crop the output" option.
