@@ -8,3 +8,6 @@
 #1) Allows the user to graphycally select which data to keep, to clean noisy parts of the signal, such as those due to superparamagnetic effects.
 #2) Calculates apparent resistivity (Rhoapp), and transforms it to effective resistivity and depth, according to Meju (1998). A plot of two Meju's equations for Rho_eff is produced. A plot of Obukhov conditions is produced.
 #3) Produces an output .csv file containing also the apparent and effective resistivity, and nicely formatted in columns to be imported in a custom MATLAB script to invert the TDEM data in 1D.
+
+
+#An example is provided, L3_01. Raw data is the file without extension, processed data is the file with .csv extension.
