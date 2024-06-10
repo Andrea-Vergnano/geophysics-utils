@@ -12,7 +12,7 @@ This script accepts as input the number of channels of your instrument, and how 
 
 The script can be run with R (and optionally Rstudio, which is an R interface easier to use). 
 
-The output files are saved in the R working directory, which if not specified I think it is the home directory.
+The output files are saved in the R working directory, which if not specified I think it is the home directory. In this folder, you can see example output files.
 
 
 
