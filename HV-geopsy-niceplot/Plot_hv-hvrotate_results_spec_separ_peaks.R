@@ -10,7 +10,7 @@
 if (!require("readr")) install.packages("readr")
 if (!require("ggplot2")) install.packages("ggplot2")
 if (!require("scales")) install.packages("scales")
-if (!require("metR")) install.packages("metR")
+if (!require("metR")) install.packages("sf","metR")
 if (!require("patchwork")) install.packages("patchwork")
 if (!require("pracma")) install.packages("pracma")
 if (!require("tcltk")) install.packages("tcltk")
@@ -47,20 +47,31 @@ f0_highpass=0 #consider as valid only values of f0 (and f1 too) > f0_highpass [H
 rotate90=FALSE # if you switched N and E components in geopsy.
 separate_peaks=0.5 #put 0 for no effect. Value is in Hz, it is the minimum difference between peaks you expect. It is needed to not consider nearby local maxima as separate peaks.
 spec=TRUE # process also .spec data which contain spectral amplitudes for each component (Z, E, N)
-show_f2=TRUE # to show also f2, other than f0 and f1, in the h/v plot.
 plot_georef=TRUE# produces also georeferenced rotation plots.
 dimensions_georef_plot=100 # in m, dimensions of the georeferenced png rotate plot files. It actually comes 40% smaller for some reasons.
 recover_coords=TRUE #to recover missing coordinates in the hv files. requires the correspondently named .SAF file in the same folder of the .hv file
 recover_coords_from_file=FALSE
-utmzone=33 # for eventual UTM conversion performed when giving external coordinates with recover coords from file.
+utmzone=32 # for eventual UTM conversion performed when giving external coordinates with recover coords from file.
 cut_char=10 #characters to be cut from filename for entitling the graph. Also, one option is to go where the composite plot is created and just put the i variable, so the name of the plots is just 1,2,3,4. In any case, the software takes the files in alphabetical order, therefore, if they are named after the date-hour, they should come out in the correct order. anyanyway, there are the coordinates that prevent any mistake positioning or confusion between points.
 
-### ramp palette for next graphs. ### 
+
+### Graphic parameters and Ramp palette for next graphs. ### 
+
 #jet_colors <- colorRampPalette(c("bisque","darksalmon" ,"darkseagreen", "deepskyblue4","darkblue","black"))(42)
 #jet_colors <- colorRampPalette(c("blue","darkcyan","lightgreen","lightyellow","pink","darkred"))(82)
 #jet_colors <- colorRampPalette(c("black","green" ,"yellow", "pink","red"))(42)
 # jet_colors <-  colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan","#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))(82)
-jet_colors <-  colorRampPalette(c("black", "#00007F", "#007FFF", "aquamarine2","cornsilk", "yellow2", "red", "#7F0000"))(100)
+jet_colors <-  colorRampPalette(c("black", "#007FFF", "aquamarine2","cornsilk", "yellow2", "red", "#7F0000"))(100)
+
+min_f=0.5 #cut the graphs below this minimum frequency
+max_f=20 #cut the graphs above this maximum frequency
+breaks_f=c(1,2,3,4,5,10,20) #tick marks on the frequency axis of the graphs
+breaks_f_polar=c(1,2,5,10,20) # tick marks on the circular plot
+
+max_plot_scale=7#to set the color scale manually
+plot_scale_auto=FALSE #to set the color scale based on the maximum amplitude in the dataset.
+
+##the code computes also f1 and f2, if you want to show them also in the graphs, go to p1 graph and check the commented lines.
 
 ### END INPUT PARAMETERS ###
 
@@ -112,16 +123,12 @@ for (element in HVfiles )
   #read the .hv data file
   raw_data <- read_delim(element, delim = "\t", escape_double = FALSE, col_names = FALSE, comment = "#", trim_ws = TRUE,show_col_types = FALSE)
   
-  ############## WARNING!!! CHECK NEXT LINE, NOT FOR ALL INSTRUMENTS OR CASES!!! check f0_highpass among Input parameters above. ####
+  ############## Set plot scale automatically (if parameter plot_scale_auto is TRUE) WARNING!!! CHECK NEXT LINE, NOT FOR ALL INSTRUMENTS OR CASES!!! check f0_highpass among Input parameters above. ####
   max_peak_amplitude=append(max_peak_amplitude,max(raw_data$X2[raw_data$X1>=f0_highpass]))
 }
 
-#calculate the median peak value for scaling the next rotation images in the same way (same color scale)
-#max_plot_scale=median(max_peak_amplitude[-c(which.max(max_peak_amplitude),which.min(max_peak_amplitude))])
+if (plot_scale_auto==TRUE){max_plot_scale=max(max_peak_amplitude)} # with this option but the max amplitude value of the dataset is used. Check the input parameters
 
-max_plot_scale=max(max_peak_amplitude) # with this option, not the median, but the max amplitude value is used
-
-max_plot_scale=5#to set it manually
 
 
 #########################################ANALYSIS of .hv files: ############################
@@ -205,10 +212,10 @@ if (length(local_maxima_df$frequency)>1){f1=local_maxima_df$frequency[2]}
 if (length(local_maxima_df$frequency)>1) {a1=local_maxima_df$amplitude[2]}
 
 ### find first peak f0 similarly to f1 ### - not necessary since it is already found by geopsy and saved on the .hv file.
-f0=0
-a0=0
-f0=local_maxima_df$frequency[1]
-a0=local_maxima_df$amplitude[1]
+# f0=0
+# a0=0
+# f0=local_maxima_df$frequency[1]
+# a0=local_maxima_df$amplitude[1]
 
 #find third peak f0 similarly to f1
 f2=0
@@ -352,8 +359,9 @@ if (length(local_maxima_df$frequency)>2) {a2=local_maxima_df$amplitude[3]}
   
   UTM_index=which(grepl("Position", f0_file, fixed=TRUE))
   UTM_raw=f0_file[UTM_index]
-  East=as.numeric(data.frame(a = unlist(strsplit(UTM_raw, split="[ \t]")))[3,1])
-  North=as.numeric(data.frame(a = unlist(strsplit(UTM_raw, split="[ \t]")))[4,1])
+ East=as.numeric(strsplit(UTM_raw, split="[ \t]")[[1]][3])
+  North=as.numeric(strsplit(UTM_raw, split="[ \t]")[[1]][4])
+  
   
   ### RECOVER MISSING COORDINATES ###
   
@@ -415,12 +423,14 @@ p1=ggplot(raw_data)+
   geom_line(aes(x=X1,y=X2,linetype="Average amplitude"),color="black")+
   geom_line(aes(x=X1,y=X3,linetype="Standard deviation"),color="black")+
   geom_line(aes(x=X1,y=X4,linetype="Standard deviation"),color="black")+
-  scale_x_log10(limits=c(0.5,30),breaks=c(1,2,3,4,5,10,20,30))+
+  scale_x_log10(limits=c(min_f,max_f),breaks=breaks_f)+
 #  scale_y_continuous(limits=c(0,max(raw_data$X4[raw_data$X1>0.5])))+ #this condition is because we are visualizing data only from 0.5 Hz on
   #  scale_y_continuous()+
    scale_y_continuous(limits=c(0,max_plot_scale))+
- labs(x="Frequency [Hz]",y= "H/V Ratio [-]",linetype=sprintf("f0 = %.01f Hz \nA0 = %.01f\n\nf1 = %.01f Hz \nA1 = %.01f\n\nf2 = %.01f\nA2 = %.01f",round(f0,1),round(a0,1),round(f1,1),round(a1,1),round(f2,1),round(a2,1)))+
-# labs(x="Frequency [Hz]",y= "H/V Ratio [-]",title=sprintf("H/V ratio of point %s",substr(element,1,nchar(element)-7)))+ # for saving plot alone, it requires the title
+ # labs(x="Frequency [Hz]",y= "H/V Ratio [-]",linetype=sprintf("f0 = %.01f Hz \nA0 = %.01f\n\nf1 = %.01f Hz \nA1 = %.01f\n\nf2 = %.01f\nA2 = %.01f",round(f0,1),round(a0,1),round(f1,1),round(a1,1),round(f2,1),round(a2,1)))+
+    labs(x="Frequency [Hz]",y= "H/V Ratio [-]",linetype=sprintf("f0 = %.01f Hz \nA0 = %.01f\n",round(f0,1),round(a0,1)))+
+    
+    # labs(x="Frequency [Hz]",y= "H/V Ratio [-]",title=sprintf("H/V ratio of point %s",substr(element,1,nchar(element)-7)))+ # for saving plot alone, it requires the title
       theme_bw()
   
 #   #save the image on the current working folder
@@ -486,25 +496,27 @@ Sesame_criteria[[i]]=c(crit1temp,crit2temp,crit3temp,crit4temp,crit5temp,crit6te
 #raw_data_grid$`H/V SR`[raw_data_grid$`H/V SR`>max_plot_scale]=max_plot_scale
 
 breaks_var=round((seq(1, max_plot_scale, length.out = 15)),1) #this length.out value should be the same of the bins in the MetR::geom_contour_fill in the ggplot function.
+##correct out of boundary values by restricting them to min max range defined in breaks_var, as per scales::squish()
 
+raw_data_grid$HVsquish=scales::squish(raw_data_grid$`H/V SR`,range=c(min(breaks_var),max(breaks_var)-abs(max(breaks_var)*0.000001)))  #that 0.000001 solves a numeric computation bug for which 4.000000000000 could be greater than 4 for the computer.
 
 p2=ggplot(raw_data_grid,aes(x,y))+
-  metR::geom_contour_fill(aes(x=x,y=y,z=`H/V SR`))+ #interpolation is to avoid pixelated image
+  metR::geom_contour_fill(aes(x=x,y=y,z=HVsquish),breaks=breaks_var)+ #important to put breaks_var here, to have same number of bins of color scale stepsn
   labs(x="Frequency [Hz]",y= "Azimuth [degrees]",fill="H/V")+
-#  labs(x="Frequency [Hz]",y= "Azimuth [degrees]",title=sprintf("H/V ratio of point %s",substr(element,1,nchar(element)-9)))+ #with the title
- # scale_fill_continuous(limits=c(0,max_plot_scale))
-#  scale_fill_stepsn(colors=jet_colors,limits=c(0,max_plot_scale),oob=squish,n.breaks=10)+ #stapped color map
+  #  labs(x="Frequency [Hz]",y= "Azimuth [degrees]",title=sprintf("H/V ratio of point %s",substr(element,1,nchar(element)-9)))+ #with the title
+  # scale_fill_continuous(limits=c(0,max_plot_scale))
+  #  scale_fill_stepsn(colors=jet_colors,limits=c(0,max_plot_scale),oob=squish,n.breaks=10)+ #stepped color map
   # scale_fill_gradientn(colors=jet_colors,limits=c(0,max_plot_scale),oob=squish)+ #continuous color map
   # scale_fill_gradientn(colors=colors,oob=squish)+ #without imposed scale color limit.
-  scale_x_log10(limits=c(0.5,30),breaks=c(1,2,3,4,5,10,20,30))+
+  scale_x_log10(limits=c(min_f,max_f),breaks=breaks_f)+
   # scale_fill_stepsn(colors=jet_colors,limits=c(0,max_plot_scale),breaks=round(logspace(0,log10(max_plot_scale),15),1),oob=squish)+
-  scale_fill_stepsn(colors=jet_colors,limits=c(min(breaks_var), max(breaks_var)),breaks=breaks_var,oob=squish)+
+  scale_fill_stepsn(colors=jet_colors,limits=c(min(breaks_var), max(breaks_var)),breaks=breaks_var)+
   
   scale_y_continuous(breaks=c(0,45,90,135,180))+
   theme_bw()+
   theme(legend.text=element_text(size=8),legend.key.height = unit(1, 'cm'))+
   geom_vline(xintercept=c(1,2,3,4,5,10),colour="grey",linetype="dotted")+
-geom_hline(yintercept=c(0,45,90,135,180),colour="grey",linetype="dotted")
+  geom_hline(yintercept=c(0,45,90,135,180),colour="grey",linetype="dotted")
 
 
 
@@ -524,24 +536,27 @@ raw_data_180_360$y=180+raw_data_180_360$y
 raw_data_360=rbind(raw_data_grid,raw_data_180_360)
 colnames(raw_data_360)=c("Frequency[Hz]","y","H/V SR")
 
+raw_data_360$HVsquish=scales::squish(raw_data_360$`H/V SR`,range=c(min(breaks_var),max(breaks_var)-abs(max(breaks_var)*0.000001)))  #that 0.000001 solves a numeric computation bug for which 4.000000000000 could be greater than 4 for the computer.
 
 p3=ggplot(raw_data_360)+
-  metR::geom_contour_fill(aes(x=`Frequency[Hz]`,y=y,z=`H/V SR`))+ #interpolation is to avoid pixelated image
+  metR::geom_contour_fill(aes(x=`Frequency[Hz]`,y=y,z=HVsquish),breaks=breaks_var)+ #interpolation is to avoid pixelated image
   #  labs(x="Frequency [Hz]",y= "Azimuth [degrees]",title=sprintf("H/V ratio of point %s",substr(element,1,nchar(element)-9)))+ #with the title
-  scale_fill_stepsn(colors=jet_colors,limits=c(0,max_plot_scale),breaks=round(logspace(0,log10(max_plot_scale),15),1),oob=squish)+
-
+  # scale_fill_stepsn(colors=jet_colors,limits=c(0,max_plot_scale),breaks=round(logspace(0,log10(max_plot_scale),15),1),oob=squish)+
+  scale_fill_stepsn(colors=jet_colors,limits=c(min(breaks_var), max(breaks_var)),breaks=breaks_var,oob=squish)+
+  
   coord_polar(theta="y")+
   scale_y_continuous(breaks=c(0,90,180,270),labels=c("N","E","S","W"))+
-  labs(x=" ",y=sprintf("Polarization direction = %i°",pol_direction),fill="H/V")+
+  # labs(x=" ",y=sprintf("Polarization direction = %i°",pol_direction),fill="H/V")+
+  labs(x=" ",y=sprintf("Polarization direction"),fill="H/V")+
   
   geom_hline(yintercept = seq(0, 360, by = 90), colour = "grey", size = 0.35,linetype="solid")+
   geom_vline(xintercept = c(1,2,5,10,20),colour = "grey", size = 0.35,linetype="dotted")+
-  scale_x_log10(limits=c(0.5,30),breaks=c(0.5,2,5,10,20,30),labels=c("0","2","5","10","20","30"))+
-  annotate("text",y=0,x=c(1,2,5,10,20,30),label=c("1","2","5","10","20","30 Hz"),alpha=1,color="darkorange",size=3,fontface="bold")+
+  scale_x_log10(limits=c(min_f,max_f),breaks=breaks_f)+
+  annotate("text",y=0,x=breaks_f_polar,label=breaks_f_polar,alpha=1,color="darkorange",size=3,fontface="bold")+
   theme_bw()+
-  theme(legend.text=element_text(size=8),legend.key.height = unit(1, 'cm'),axis.text.y=element_blank(),axis.ticks.y=element_blank())+
-  geom_segment(aes(x=0,y=pol_direction, xend=3, yend=pol_direction),arrow=arrow(length=unit(0.3,"cm")),color="red")+ #these two lines plot the arrow in the polarization direction
-  geom_segment(aes(x=0,y=pol_direction+180, xend=3, yend=pol_direction+180),arrow=arrow(length=unit(0.3,"cm")),color="red")
+  theme(legend.text=element_text(size=8),legend.key.height = unit(1, 'cm'),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+#geom_segment(aes(x=0,y=pol_direction, xend=3, yend=pol_direction),arrow=arrow(length=unit(0.3,"cm")),color="red")+ #these two lines plot the arrow in the polarization direction
+# geom_segment(aes(x=0,y=pol_direction+180, xend=3, yend=pol_direction+180),arrow=arrow(length=unit(0.3,"cm")),color="red")
 # annotate(geom="label", y = 0, x = c(0,2, 5, 10, 20), label = c('0 Hz', '2','5', '10', '20'),fill="white",size=2,alpha=0.6) +
 
 #ggsave(sprintf("%s_Rotate_polar.png",substr(element,1,nchar(element)-9)), width = 9, height = 6)# for minishark .txt files
@@ -562,10 +577,10 @@ if(spec==TRUE){
     geom_line(aes(x=raw_data_specZ$X1,y=raw_data_specZ$X2,color="Z"),size=1)+
     geom_line(aes(x=raw_data_specE$X1,y=raw_data_specE$X2,color="E"),size=1)+
     geom_line(aes(x=raw_data_specN$X1,y=raw_data_specN$X2,color="N"),size=1)+
-    scale_x_log10(limits=c(0.5,30),breaks=c(1,2,3,4,5,10,20,30))+
+    scale_x_log10(limits=c(min_f,max_f),breaks=breaks_f)+
     #  scale_y_continuous(limits=c(0,max(raw_data$X4[raw_data$X1>0.5])))+ #this condition is because we are visualizing data only from 0.5 Hz on
     #  scale_y_continuous()+
-    scale_y_continuous()+
+    scale_y_continuous(limits=c(0,max(max(raw_data_specZ$X2[(raw_data_specZ$X1<max_f) & (raw_data_specZ$X1>min_f)]),max(raw_data_specE$X2[(raw_data_specZ$X1<max_f) & (raw_data_specZ$X1>min_f)]),max(raw_data_specN$X2[(raw_data_specZ$X1<max_f) & (raw_data_specZ$X1>min_f)]))))+
     scale_color_manual(values=c("Z" = "blue", "E" = "red", "N" = "green"),name="Component")+
     labs(x="Frequency [Hz]",y= "Power spectral density [(counts)^2/Hz]",fill="Component")+
     # labs(x="Frequency [Hz]",y= "H/V Ratio [-]",title=sprintf("H/V ratio of point %s",substr(element,1,nchar(element)-7)))+ # for saving plot alone, it requires the title
