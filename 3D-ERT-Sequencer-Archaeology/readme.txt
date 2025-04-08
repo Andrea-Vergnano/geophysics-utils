@@ -1,0 +1,7 @@
+This folder contains the scripts to create the main 3D ERT sequence used for the scientific publication of our group, entitled Survey strategies and sequence optimization for full-3D electrical resistivity tomography in archaeological sites: a case study on a domus of the Roman town of Augusta Bagiennorum (NW Italy). 
+
+An R script, commented in detail, produces a measurement sequence for full3D ERT surveys. 
+A fortran script shuffles the sequence to avoid using an electrode as a potential electrode just after it was used as current electrodes, to avoid polarization errors. I report the codeblocks project with the source code in the .f90 file, and the compiled program (.exe) in the Debug folder. To use it, just put a data.csv file with your sequence (formatted as in the example) and double click on the .exe file. It will output a txt file with the optimized sequence. Known bugs: it removes the first and last acquisition point, which should be readded manually. It only works well for ERT sequences where for each AB dipoles there are 10 or multiple of 10 MN electrodes. I'm working on a different script that will solve all these issues by using a different concept, but anyway this script worked well for the purpose of this 3D ERT acquisition at Augusta Bagiennorum archaeological site.
+This folder also contain the final .txt sequence used in the field.
+
+The scripts were already run to produce example sequences.
